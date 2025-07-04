@@ -755,13 +755,8 @@ class ExperimentRunner:
 
         return satisfied_players / total_players if total_players > 0 else 0
 
-#################################################################################################
-# Main Execution Block                                                                         #
-#################################################################################################
-#  Left the runtime flags untouched — just popped a few lines of context so someone skimming the
-#  file knows why we're comparing two algorithms and mocking stats tests at the bottom.
-#################################################################################################
 
+# Run and simulate our Game!!!
 if __name__ == "__main__":
     print("=== ADVANCED TEAM MATCHMAKING EXPERIMENT ===")
     print("Features:")
