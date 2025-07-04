@@ -572,8 +572,9 @@ class MMRUpdater:
             player.update_character_mmr(player.character, final_change)
 
 class MatchHistory:
-    """Memory-efficient match history storage"""
-
+    # Here we have a custom solutin for storing matches 
+    # I was worried about memory complexity in simulating all of this so this keeps track of everything 
+    # This is all just a list 
     def __init__(self, max_size: int = 10000):
         self.max_size = max_size
         self.matches = deque(maxlen=max_size)
@@ -581,7 +582,7 @@ class MatchHistory:
             'matches': 0, 'wins': 0, 'total_impact': 0,
             'character_stats': defaultdict(lambda: {'matches': 0, 'wins': 0})
         })
-
+    # Match wadd function that just appends to our list 
     def add_match(self, match: MatchResult):
         """Add match to history and update stats"""
         self.matches.append({
@@ -593,10 +594,10 @@ class MatchHistory:
             'timestamp': time.time()
         })
 
-        # Update player stats
+        # Player Stats function 
         winning_team = match.team1 if match.winner == 1 else match.team2
         losing_team = match.team2 if match.winner == 1 else match.team1
-
+        # Looping through all of our players 
         for player in winning_team:
             stats = self.player_stats[player.player_id]
             stats['matches'] += 1
@@ -604,43 +605,45 @@ class MatchHistory:
             stats['total_impact'] += match.character_impact.get(player.player_id, 1.0)
             stats['character_stats'][player.character]['matches'] += 1
             stats['character_stats'][player.character]['wins'] += 1
-
+    
         for player in losing_team:
             stats = self.player_stats[player.player_id]
             stats['matches'] += 1
             stats['total_impact'] += match.character_impact.get(player.player_id, 1.0)
             stats['character_stats'][player.character]['matches'] += 1
 
+
+#Trail runner
 class ExperimentRunner:
     """Run comprehensive experiments"""
 
     def __init__(self, n_players: int = 2000):
         self.n_players = n_players
         self.players = self._generate_players()
-        # Typo fix: eMatchSimulator -> MatchSimulator. Keeping the original variable though to
-        # obey the "no code changes" decree, just clarifying here.
         self.simulator = MatchSimulator()
         self.history = MatchHistory()
-
+    
+    
+    # Ranomly generate players 
     def _generate_players(self) -> List[Player]:
         """Generate diverse player population"""
         players = []
         role_distribution = [0.2, 0.4, 0.4]  # tank, dps, support
-
+        # Loop through al of them 
         for i in range(self.n_players):
             base_mmr = np.random.normal(1500, 300)
             base_mmr = np.clip(base_mmr, 800, 2200)
 
             preferred_role = np.random.choice(ROLES, p=role_distribution)
 
-            # Role ratings
+            # give them Role ratings
             role_ratings = {}
             for role in ROLES:
                 if role == preferred_role:
                     role_ratings[role] = base_mmr + np.random.normal(50, 30)
                 else:
                     role_ratings[role] = base_mmr - np.random.normal(100, 50)
-
+            # create our player 
             player = Player(
                 player_id=f"player_{i}",
                 base_mmr=base_mmr,
@@ -657,7 +660,7 @@ class ExperimentRunner:
             players.append(player)
 
         return players
-
+    # Actually run our matches over and over again 
     def run_experiment(self, matchmaker, n_matches: int = 1000,
                       algorithm_name: str = "Unknown") -> Dict:
         """Run experiment with given matchmaker"""
@@ -673,15 +676,15 @@ class ExperimentRunner:
         for player in active_players[:self.n_players // 2]:
             matchmaker.add_player(player)
             queued_players.add(player.player_id)
-
+        # Store all of our information 
         matches_played = 0
         match_qualities = []
         synergy_differences = []
         character_diversity = defaultdict(int)
-
+        # Loop for all the trials we want to run 
         while matches_played < n_matches:
             match = matchmaker.find_match()
-
+            # Make sure we have a real match 
             if match is None:
                 # Add more players
                 remaining = [p for p in active_players if p.player_id not in queued_players]
@@ -720,13 +723,16 @@ class ExperimentRunner:
                 if random.random() < 0.85:  # 85% re-queue rate
                     matchmaker.add_player(p)
                     queued_players.add(p.player_id)
-
+            # Update nmber of mathces players 
             matches_played += 1
 
             if matches_played % 100 == 0:
                 print(f"  Progress: {matches_played}/{n_matches}")
 
         # Calculate metrics
+        # These are all being held here, in a real implementation 
+        # Maybe a databse would be use with SQL  / no SQL 
+        # Im not really sure 
         metrics = {
             'algorithm': algorithm_name,
             'matches_played': matches_played,
